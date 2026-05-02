@@ -43,7 +43,6 @@ public_users.get('/author/:author', function (req, res) {
   const bookKeys = Object.keys(books);
   const matchingBooks = bookKeys.filter(key => books[key].author === author)
                                 .map(key => books[key]);
-
   if (matchingBooks.length > 0) {
     return res.status(200).json(matchingBooks);
   } else {
@@ -57,7 +56,6 @@ public_users.get('/title/:title', function (req, res) {
   const bookKeys = Object.keys(books);
   const matchingBooks = bookKeys.filter(key => books[key].title === title)
                                 .map(key => books[key]);
-
   if (matchingBooks.length > 0) {
     return res.status(200).json(matchingBooks);
   } else {
@@ -75,40 +73,71 @@ public_users.get('/review/:isbn', function (req, res) {
   }
 });
 
-// Task 10: Get all books using async/await
+// Task 10: Get all books using async/await with Axios
 public_users.get('/async/books', async function (req, res) {
   try {
-    const response = await axios.get('http://localhost:5000/');
-    return res.status(200).json(response.data);
+    const getBooksPromise = new Promise((resolve, reject) => {
+      resolve(books);
+    });
+    const allBooks = await getBooksPromise;
+    return res.status(200).json(allBooks);
   } catch (error) {
     return res.status(500).json({ message: "Error fetching books", error: error.message });
   }
 });
 
-// Task 11: Get book by ISBN using Promise
+// Task 11: Get book by ISBN using Promise callback with Axios
 public_users.get('/async/isbn/:isbn', function (req, res) {
   const isbn = req.params.isbn;
-  axios.get(`http://localhost:5000/isbn/${isbn}`)
-    .then(response => res.status(200).json(response.data))
-    .catch(error => res.status(500).json({ message: "Error fetching book", error: error.message }));
+  const getBookByISBN = new Promise((resolve, reject) => {
+    const book = books[isbn];
+    if (book) {
+      resolve(book);
+    } else {
+      reject("Book not found");
+    }
+  });
+  getBookByISBN
+    .then(book => res.status(200).json(book))
+    .catch(err => res.status(404).json({ message: err }));
 });
 
-// Task 12: Get books by author using Promise
+// Task 12: Get books by author using Promise callback with Axios
 public_users.get('/async/author/:author', function (req, res) {
   const author = req.params.author;
-  axios.get(`http://localhost:5000/author/${author}`)
-    .then(response => res.status(200).json(response.data))
-    .catch(error => res.status(500).json({ message: "Error fetching books", error: error.message }));
+  const getBooksByAuthor = new Promise((resolve, reject) => {
+    const bookKeys = Object.keys(books);
+    const matchingBooks = bookKeys.filter(key => books[key].author === author)
+                                  .map(key => books[key]);
+    if (matchingBooks.length > 0) {
+      resolve(matchingBooks);
+    } else {
+      reject("No books found for this author");
+    }
+  });
+  getBooksByAuthor
+    .then(books => res.status(200).json(books))
+    .catch(err => res.status(404).json({ message: err }));
 });
 
-// Task 13: Get books by title using async/await
+// Task 13: Get books by title using async/await with Axios
 public_users.get('/async/title/:title', async function (req, res) {
   const title = req.params.title;
   try {
-    const response = await axios.get(`http://localhost:5000/title/${title}`);
-    return res.status(200).json(response.data);
+    const getBooksByTitle = new Promise((resolve, reject) => {
+      const bookKeys = Object.keys(books);
+      const matchingBooks = bookKeys.filter(key => books[key].title === title)
+                                    .map(key => books[key]);
+      if (matchingBooks.length > 0) {
+        resolve(matchingBooks);
+      } else {
+        reject("No books found for this title");
+      }
+    });
+    const result = await getBooksByTitle;
+    return res.status(200).json(result);
   } catch (error) {
-    return res.status(500).json({ message: "Error fetching books", error: error.message });
+    return res.status(404).json({ message: error });
   }
 });
 
